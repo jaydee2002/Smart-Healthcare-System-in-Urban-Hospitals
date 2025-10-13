@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 
 import connectDB from "./config/db.js";
 
+import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/users.js";
+
 dotenv.config();
 
 const app = express();
@@ -14,6 +17,9 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Server is running");
 });
+
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 const PORT = process.env.PORT || 5002;
 
