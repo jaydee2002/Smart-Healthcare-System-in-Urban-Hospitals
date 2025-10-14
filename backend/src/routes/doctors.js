@@ -7,6 +7,9 @@ import {
   updateDoctor,
   deleteDoctor,
   setAvailability,
+  getAvailability,
+  updateAvailability,
+  deleteAvailability,
   getDoctorAppointments,
   updateAppointment,
 } from "../controllers/doctorController.js";
@@ -20,10 +23,12 @@ router.use(authorize("admin")); // All doctor routes admin-only
 
 router.route("/").post(createDoctor).get(getDoctors);
 router.route("/:id").get(getDoctorById).put(updateDoctor).delete(deleteDoctor);
-router.route("/:id/availability").post(setAvailability);
+router.route("/:id/availability").post(setAvailability).get(getAvailability);
 router
-  .route("/:id/appointments")
-  .get(getDoctorAppointments)
-  .put(updateAppointment); // Expects appointmentId in body or query for update
+  .route("/:id/availability/:availId")
+  .put(updateAvailability)
+  .delete(deleteAvailability);
+router.route("/:id/appointments").get(getDoctorAppointments);
+router.route("/:id/appointments/:appointmentId").put(updateAppointment);
 
 export default router;

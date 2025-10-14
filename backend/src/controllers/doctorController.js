@@ -136,39 +136,55 @@ const deleteDoctor = async (req, res) => {
   }
 };
 
+// Helper function for overlap check
+const checkOverlaps = (
+  date,
+  newSlots,
+  existingAvailabilities,
+  excludeId = null
+) => {
+  const targetDate = startOfDay(new Date(date));
+  const dayEnd = addDays(targetDate, 1);
+
+  const relevantAvails = existingAvailabilities.filter(
+    (a) =>
+      a._id.toString() !== excludeId &&
+      isWithinInterval(new Date(a.date), { start: targetDate, end: dayEnd })
+  );
+
+  for (let newSlot of newSlots) {
+    for (let avail of relevantAvails) {
+      for (let existing of avail.timeSlots) {
+        if (newSlot.start < existing.end && newSlot.end > existing.start) {
+          return true; // Overlap found
+        }
+      }
+    }
+  }
+  return false; // No overlaps
+};
+
 // @desc    Set availability (with recurrence)
 // @route   POST /api/doctors/:id/availability
 // @access  Private/Admin
 const setAvailability = async (req, res) => {
   try {
-    const { date, timeSlots, recurrence } = req.body; // timeSlots: [{start, end}]
+    const { date, timeSlots, recurrence } = req.body;
     const doctor = await Doctor.findById(req.params.id);
 
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
 
-    // Check for overlaps
     const newSlots = timeSlots.map((slot) => ({
       start: new Date(slot.start),
       end: new Date(slot.end),
       isBooked: false,
     }));
 
-    // Simple overlap check (expand for production)
-    const existingSlots =
-      doctor.availability.find((a) =>
-        isWithinInterval(new Date(date), {
-          start: startOfDay(new Date(date)),
-          end: addDays(startOfDay(new Date(date)), 1),
-        })
-      )?.timeSlots || [];
-    for (let newSlot of newSlots) {
-      for (let existing of existingSlots) {
-        if (newSlot.start < existing.end && newSlot.end > existing.start) {
-          return res.status(400).json({ message: "Overlapping time slot" });
-        }
-      }
+    // Check for overlaps on initial date
+    if (checkOverlaps(date, newSlots, doctor.availability)) {
+      return res.status(400).json({ message: "Overlapping time slot" });
     }
 
     // Add initial availability
@@ -178,10 +194,10 @@ const setAvailability = async (req, res) => {
       recurrence,
     });
 
-    // Apply recurrence if set (e.g., generate up to 30 days ahead)
+    // Apply recurrence if set (generate up to 1 month ahead, check overlaps for each)
     if (recurrence !== "none") {
       let currentDate = new Date(date);
-      const endDate = addMonths(currentDate, 1); // Limit to 1 month
+      const endDate = addMonths(currentDate, 1);
       while (currentDate < endDate) {
         if (recurrence === "daily") currentDate = addDays(currentDate, 1);
         else if (recurrence === "weekly")
@@ -189,14 +205,21 @@ const setAvailability = async (req, res) => {
         else if (recurrence === "monthly")
           currentDate = addMonths(currentDate, 1);
 
-        // Clone slots for new date (no overlap check for recurring)
+        if (checkOverlaps(currentDate, newSlots, doctor.availability)) {
+          continue; // Skip if overlap on recurring date
+        }
+
         doctor.availability.push({
           date: currentDate,
           timeSlots: newSlots.map((s) => ({
-            ...s,
-            start: new Date(s.start),
-            end: new Date(s.end),
-          })), // Adjust times if needed
+            start: new Date(
+              currentDate.setHours(s.start.getHours(), s.start.getMinutes())
+            ),
+            end: new Date(
+              currentDate.setHours(s.end.getHours(), s.end.getMinutes())
+            ),
+            isBooked: false,
+          })),
           recurrence,
         });
       }
@@ -206,6 +229,111 @@ const setAvailability = async (req, res) => {
     res.status(201).json({ message: "Availability set" });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get availability for doctor
+// @route   GET /api/doctors/:id/availability
+// @access  Private/Admin
+const getAvailability = async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id);
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+    res.json(doctor.availability);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update availability
+// @route   PUT /api/doctors/:id/availability/:availId
+// @access  Private/Admin
+const updateAvailability = async (req, res) => {
+  try {
+    const { date, timeSlots, recurrence } = req.body;
+    const doctor = await Doctor.findById(req.params.id);
+
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    const avail = doctor.availability.id(req.params.availId);
+    if (!avail) {
+      return res.status(404).json({ message: "Availability not found" });
+    }
+
+    const updateDate = date ? new Date(date) : avail.date;
+    const updateSlots = timeSlots
+      ? timeSlots.map((slot) => ({
+          start: new Date(slot.start),
+          end: new Date(slot.end),
+          isBooked:
+            slot.isBooked ??
+            avail.timeSlots.find((s) => s.start.toISOString() === slot.start)
+              ?.isBooked ??
+            false,
+        }))
+      : avail.timeSlots;
+
+    // Check for overlaps (exclude self)
+    if (
+      checkOverlaps(
+        updateDate,
+        updateSlots,
+        doctor.availability,
+        req.params.availId
+      )
+    ) {
+      return res.status(400).json({ message: "Overlapping time slot" });
+    }
+
+    // Update fields
+    avail.date = updateDate;
+    avail.timeSlots = updateSlots;
+    avail.recurrence = recurrence || avail.recurrence;
+
+    // Note: If recurrence changes, no auto-generation of new entries; treat as single update
+
+    await doctor.save();
+    res.json(avail);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete availability
+// @route   DELETE /api/doctors/:id/availability/:availId
+// @access  Private/Admin
+const deleteAvailability = async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id);
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    const avail = doctor.availability.id(req.params.availId);
+    if (!avail) {
+      return res.status(404).json({ message: "Availability not found" });
+    }
+
+    // Optional: prevent deletion if any booked slots
+    if (avail.timeSlots.some((s) => s.isBooked)) {
+      return res
+        .status(400)
+        .json({ message: "Cannot delete availability with booked slots" });
+    }
+
+    // Remove the subdocument using pull
+    doctor.availability.pull({ _id: req.params.availId });
+
+    await doctor.save();
+    res.json({ message: "Availability removed" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: `Error deleting availability: ${error.message}` });
   }
 };
 
@@ -274,6 +402,9 @@ export {
   updateDoctor,
   deleteDoctor,
   setAvailability,
+  getAvailability,
+  updateAvailability,
+  deleteAvailability,
   getDoctorAppointments,
   updateAppointment,
 };
