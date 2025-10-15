@@ -5,18 +5,26 @@ import connectDB from "./src/config/db.js";
 import Appointment from "./src/models/Appointment.js";
 import Patient from "./src/models/Patient.js";
 import Doctor from "./src/models/Doctor.js";
+import User from "./src/models/User.js";
 
 dotenv.config();
 
 const seedAppointments = async () => {
   await connectDB();
 
-  // Sample patient
+  const user = await User.findOne({ email: "usr@gmail.com" }); // assuming you have a User model
   const samplePatient = await Patient.create({
     name: "Test Patient",
     email: "patient@test.com",
-    user: "some-user-id", // Skip for now
+    user: user._id,
   });
+
+  // // Sample patient
+  // const samplePatient = await Patient.create({
+  //   name: "Test Patient",
+  //   email: "patient@test.com",
+  //   user: "some-user-id", // Skip for now
+  // });
 
   // Sample doctor ID from seed
   const sampleDoctor = await Doctor.findOne();

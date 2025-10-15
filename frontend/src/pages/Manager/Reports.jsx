@@ -1,44 +1,66 @@
-// src/components/ReportExport.jsx
-import jsPDF from "jspdf";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-import { getReportById } from "../../services/reportService.js";
+// src/pages/Manager/Reports.jsx
+import { useState, useEffect } from "react";
+import ReportFilters from "../../components/ReportFilters.jsx";
+import ReportCharts from "../../components/ReportCharts.jsx";
+import ReportExport from "../../components/ReportExport.jsx";
+import { generateReport, getReports } from "../../services/reportService.js";
+import toast from "react-hot-toast";
 
-const ReportExport = ({ reportId, metrics }) => {
-  const exportPDF = async () => {
-    const report = await getReportById(reportId);
-    const doc = new jsPDF();
-    doc.text("Healthcare Report", 10, 10);
-    doc.text(`Type: ${report.type}`, 10, 20);
-    doc.text(`Total Patients: ${metrics.totalPatientCount}`, 10, 30);
-    // Add more text/tables (simplified)
-    doc.save(`report-${report._id}.pdf`);
-  };
+const Reports = () => {
+  const [reportData, setReportData] = useState(null);
+  const [reportsHistory, setReportsHistory] = useState([]);
+  const [filters, setFilters] = useState({});
 
-  const exportExcel = () => {
-    const ws = XLSX.utils.json_to_sheet([metrics]); // Flatten for sheet
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Metrics");
-    const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-    saveAs(new Blob([buf]), `report-${reportId}.xlsx`);
+  useEffect(() => {
+    // Load history
+    getReports({ limit: 5 })
+      .then((res) => setReportsHistory(res.data))
+      .catch(console.error);
+  }, []);
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    generateReport(newFilters.reportType, {
+      hospital: newFilters.hospital,
+      startDate: newFilters.startDate,
+      endDate: newFilters.endDate,
+    })
+      .then((res) => {
+        setReportData(res.data);
+        toast.success("Report generated");
+      })
+      .catch((error) => toast.error("Failed to generate report"));
   };
 
   return (
-    <div className="flex gap-4 p-4">
-      <button
-        onClick={exportPDF}
-        className="bg-red-600 text-white px-4 py-2 rounded"
-      >
-        Export PDF
-      </button>
-      <button
-        onClick={exportExcel}
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
-        Export Excel
-      </button>
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Reports & Analytics</h1>
+      <ReportFilters
+        onFilterChange={handleFilterChange}
+        initialFilters={filters}
+      />
+      {reportData && (
+        <>
+          <ReportCharts metrics={reportData.metrics} />
+          <ReportExport
+            reportId={reportData.reportId}
+            metrics={reportData.metrics}
+          />
+        </>
+      )}
+      <div className="mt-8">
+        <h3 className="text-xl font-bold mb-4">Recent Reports</h3>
+        <ul className="bg-white p-4 rounded-lg shadow-md">
+          {reportsHistory.map((r) => (
+            <li key={r._id} className="mb-2">
+              {r.type} - {new Date(r.createdAt).toLocaleDateString()} (
+              {r.generatedBy?.name})
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
 
-export default ReportExport;
+export default Reports;

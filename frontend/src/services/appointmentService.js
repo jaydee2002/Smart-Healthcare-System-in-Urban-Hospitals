@@ -7,6 +7,7 @@ const searchDoctors = (filters) => {
 };
 
 const getAvailableSlots = (doctorId, date) => {
+  console.log("Fetching slots for doctor:", doctorId, "on date:", date);
   const params = date ? `?date=${date}` : "";
   return api.get(`/appointments/${doctorId}/slots${params}`);
 };

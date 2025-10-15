@@ -11,6 +11,7 @@ const SlotSelector = ({ doctorId, onSelectSlot }) => {
 
   useEffect(() => {
     setLoading(true);
+
     getAvailableSlots(doctorId, selectedDate.toISOString().split("T")[0])
       .then((res) => {
         setSlots(res.data.slots);

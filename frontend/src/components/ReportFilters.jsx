@@ -20,14 +20,17 @@ const ReportFilters = ({ onFilterChange, initialFilters = {} }) => {
     // Fetch hospitals (assume backend endpoint; or hardcode from seed)
     api
       .get("/hospitals") // Add if needed, or use seeded
-      .then((res) =>
-        setHospitals(
-          res.data || [
-            { _id: "1", name: "City Private" },
-            { _id: "2", name: "Govt General" },
-          ]
-        )
-      )
+      .then((res) => {
+        const data = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data.hospitals)
+          ? res.data.hospitals
+          : [
+              { _id: "1", name: "City Private" },
+              { _id: "2", name: "Govt General" },
+            ];
+        setHospitals(data);
+      })
       .catch(() => setHospitals([{ _id: "1", name: "Sample Hospital" }]));
   }, []);
 
