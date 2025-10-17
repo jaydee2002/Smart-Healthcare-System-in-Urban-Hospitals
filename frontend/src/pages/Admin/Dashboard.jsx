@@ -5,7 +5,7 @@ const AdminDashboard = () => {
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans antialiased">
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg flex-shrink-0 border-r border-gray-200">
+      {/* <aside className="w-64 bg-white shadow-lg flex-shrink-0 border-r border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">Admin Panel</h2>
         </div>
@@ -31,12 +31,14 @@ const AdminDashboard = () => {
             <ChevronRightIcon className="w-4 h-4 mr-2" />
             Manage Hospitals
           </Link>
-          {/* Add more links as needed */}
         </nav>
-      </aside>
+      </aside> */}
 
       {/* Main content */}
       <main className="flex-1 p-8 overflow-auto flex flex-col">
+        <Link to="/admin/doctors" className="">
+          Manage Doctors
+        </Link>
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">
           Admin Dashboard
         </h1>

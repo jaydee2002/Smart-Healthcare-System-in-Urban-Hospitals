@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { toast } from "react-hot-toast";
+import { format, isAfter } from "date-fns";
+import { Calendar, Plus, Trash2, Pencil, Clock, X } from "lucide-react";
+
 import {
   setAvailability,
   getAvailability,
   updateAvailability,
   deleteAvailability,
 } from "../services/doctorService.js";
-import toast from "react-hot-toast";
-import { format, isAfter } from "date-fns";
-import { PlusIcon, TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
 
 const AvailabilityCalendar = () => {
   const { id: doctorId } = useParams();
@@ -88,7 +87,7 @@ const AvailabilityCalendar = () => {
     ) {
       try {
         await deleteAvailability(doctorId, avail._id);
-        toast.success("Availability deleted");
+        toast.success("Availability deleted successfully");
         refetch();
       } catch (error) {
         toast.error(
@@ -117,11 +116,11 @@ const AvailabilityCalendar = () => {
     try {
       if (editMode) {
         await updateAvailability(doctorId, currentAvailId, data);
-        toast.success("Availability updated");
+        toast.success("Availability updated successfully");
         handleCancel();
       } else {
         await setAvailability(doctorId, data);
-        toast.success("Availability set");
+        toast.success("Availability created successfully");
         setTimeSlots([]);
       }
       refetch();
@@ -132,135 +131,356 @@ const AvailabilityCalendar = () => {
     }
   };
 
-  if (loading)
-    return <div className="p-4 text-gray-600">Loading availabilities...</div>;
+  const formatTime = (date) => {
+    return new Date(date).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin" />
+          <p className="text-gray-500">Loading schedule...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 flex flex-col h-full space-y-6">
-      <h2 className="text-xl font-semibold text-gray-800">
-        {editMode ? "Edit Availability" : "Set New Availability"}
-      </h2>
-      <DatePicker
-        selected={selectedDate}
-        onChange={setSelectedDate}
-        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-        wrapperClassName="w-full"
-      />
-      <select
-        value={recurrence}
-        onChange={(e) => setRecurrence(e.target.value)}
-        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-      >
-        <option value="none">None</option>
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-      </select>
-      <div className="space-y-4">
-        {timeSlots.map((slot, index) => (
-          <div key={index} className="flex items-center gap-4">
-            <DatePicker
-              selected={slot.start}
-              onChange={(date) => updateSlot(index, "start", date)}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              dateFormat="h:mm aa"
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition flex-1"
-            />
-            <DatePicker
-              selected={slot.end}
-              onChange={(date) => updateSlot(index, "end", date)}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              dateFormat="h:mm aa"
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition flex-1"
-            />
-            <button
-              type="button"
-              onClick={() => removeSlot(index)}
-              className="p-2 text-red-600 hover:text-red-800 transition"
-            >
-              <TrashIcon className="w-5 h-5" />
-            </button>
-          </div>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={addSlot}
-        className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition"
-      >
-        <PlusIcon className="w-5 h-5 mr-2" />
-        Add Slot
-      </button>
-      <div className="flex gap-4">
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          {submitting
-            ? "Saving..."
-            : editMode
-            ? "Update Availability"
-            : "Set Availability"}
-        </button>
-        {editMode && (
-          <button
-            onClick={handleCancel}
-            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
-          >
-            Cancel
-          </button>
-        )}
-      </div>
+    <div className="min-h-screen bg-white p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            {editMode ? "Edit Schedule" : "Manage Availability"}
+          </h1>
+          <p className="text-gray-600">
+            {editMode
+              ? "Update your existing schedule"
+              : "Set your availability and manage time slots"}
+          </p>
+        </div>
 
-      <h3 className="text-lg font-semibold text-gray-800 mt-8 mb-4">
-        Existing Availabilities
-      </h3>
-      <div className="overflow-y-auto flex-1 space-y-4">
-        {availabilities
-          .sort((a, b) => new Date(a.date) - new Date(b.date))
-          .map((avail) => (
-            <div key={avail._id} className="bg-white rounded-xl shadow-sm p-4">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-sm font-medium text-gray-700">
-                  Date: {format(new Date(avail.date), "yyyy-MM-dd")}
-                </p>
-                <div className="flex space-x-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Form */}
+          <div className="lg:col-span-2">
+            <div className="border border-gray-200 rounded-lg p-6">
+              <div className="space-y-6">
+                {/* Date and Recurrence */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Date
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDate.toISOString().split("T")[0]}
+                      onChange={(e) =>
+                        setSelectedDate(new Date(e.target.value))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Recurrence
+                    </label>
+                    <select
+                      value={recurrence}
+                      onChange={(e) => setRecurrence(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500"
+                    >
+                      <option value="none">None</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Time Slots */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Time Slots
+                    </label>
+                    <span className="text-sm text-gray-500">
+                      {timeSlots.length}/5 slots
+                    </span>
+                  </div>
+
+                  {timeSlots.length === 0 ? (
+                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-12 text-center">
+                      <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No time slots added yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {timeSlots.map((slot, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-4 border border-gray-200 rounded-md"
+                        >
+                          <div className="flex-1 grid grid-cols-2 gap-3">
+                            <input
+                              type="time"
+                              value={
+                                String(slot.start.getHours()).padStart(2, "0") +
+                                ":" +
+                                String(slot.start.getMinutes()).padStart(2, "0")
+                              }
+                              onChange={(e) => {
+                                const [h, m] = e.target.value.split(":");
+                                const newStart = new Date(slot.start);
+                                newStart.setHours(parseInt(h), parseInt(m));
+                                updateSlot(index, "start", newStart);
+                              }}
+                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500"
+                            />
+                            <input
+                              type="time"
+                              value={
+                                String(slot.end.getHours()).padStart(2, "0") +
+                                ":" +
+                                String(slot.end.getMinutes()).padStart(2, "0")
+                              }
+                              onChange={(e) => {
+                                const [h, m] = e.target.value.split(":");
+                                const newEnd = new Date(slot.end);
+                                newEnd.setHours(parseInt(h), parseInt(m));
+                                updateSlot(index, "end", newEnd);
+                              }}
+                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500"
+                            />
+                          </div>
+                          <button
+                            onClick={() => removeSlot(index)}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {timeSlots.length < 5 && (
+                    <button
+                      onClick={addSlot}
+                      className="w-full mt-3 px-4 py-3 border-2 border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center gap-2 rounded-md"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Time Slot</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button
-                    onClick={() => handleEdit(avail)}
-                    className="p-1 text-blue-600 hover:text-blue-800 transition"
+                    onClick={handleSubmit}
+                    disabled={submitting || timeSlots.length === 0}
+                    className="flex-1 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white disabled:opacity-50 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 transition-colors flex items-center justify-center gap-2"
                   >
-                    <PencilIcon className="w-5 h-5" />
+                    {submitting ? (
+                      "Saving..."
+                    ) : editMode ? (
+                      <>
+                        <Pencil className="w-4 h-4" />
+                        Update Schedule
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="w-4 h-4" />
+                        Create Schedule
+                      </>
+                    )}
                   </button>
-                  <button
-                    onClick={() => handleDelete(avail)}
-                    className="p-1 text-red-600 hover:text-red-800 transition"
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
+                  {editMode && (
+                    <button
+                      onClick={handleCancel}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 transition-colors flex items-center gap-2"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  )}
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-2">
-                Recurrence: {avail.recurrence}
-              </p>
-              <ul className="space-y-1">
-                {avail.timeSlots.map((slot, i) => (
-                  <li key={i} className="text-sm text-gray-700">
-                    {format(new Date(slot.start), "HH:mm")} -{" "}
-                    {format(new Date(slot.end), "HH:mm")}{" "}
-                    {slot.isBooked ? "(Booked)" : ""}
-                  </li>
-                ))}
-              </ul>
             </div>
-          ))}
-        {availabilities.length === 0 && (
-          <p className="text-sm text-gray-600">No availabilities set yet.</p>
-        )}
+          </div>
+
+          {/* Right Column - Summary */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 space-y-4">
+              {/* Summary Card */}
+              <div className="border border-gray-200 rounded-lg p-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">
+                  Quick Summary
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-3 border border-gray-200 rounded-md">
+                    <p className="text-sm text-gray-500 mb-1">Selected Date</p>
+                    <p className="text-gray-900">
+                      {formatDate(selectedDate.toISOString())}
+                    </p>
+                  </div>
+                  <div className="p-3 border border-gray-200 rounded-md">
+                    <p className="text-sm text-gray-500 mb-1">Time Slots</p>
+                    <p className="text-gray-900">{timeSlots.length}</p>
+                  </div>
+                  <div className="p-3 border border-gray-200 rounded-md">
+                    <p className="text-sm text-gray-500 mb-1">Recurrence</p>
+                    <p className="text-gray-900 capitalize">{recurrence}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Card */}
+              <div className="border border-gray-200 rounded-lg p-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">
+                  Statistics
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md">
+                    <span className="text-sm text-gray-600">
+                      Total Schedules
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {availabilities.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md">
+                    <span className="text-sm text-gray-600">Active Today</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {
+                        availabilities.filter(
+                          (a) =>
+                            new Date(a.date).toDateString() ===
+                            new Date().toDateString()
+                        ).length
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Existing Schedules */}
+        <div className="mt-12">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">
+              Existing Schedules
+            </h2>
+            <p className="text-gray-600">Manage your availability timeline</p>
+          </div>
+
+          {availabilities.length === 0 ? (
+            <div className="border-2 border-dashed border-gray-200 rounded-lg p-12 text-center">
+              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-gray-900 mb-2">No schedules yet</h3>
+              <p className="text-gray-500 max-w-md mx-auto">
+                Create your first availability schedule to start managing your
+                appointments
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {availabilities
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map((avail) => {
+                  const hasBooked = avail.timeSlots.some((s) => s.isBooked);
+                  const totalSlots = avail.timeSlots.length;
+                  const bookedSlots = avail.timeSlots.filter(
+                    (s) => s.isBooked
+                  ).length;
+
+                  return (
+                    <div
+                      key={avail._id}
+                      className={`border p-5 rounded-lg ${
+                        hasBooked ? "border-gray-300" : "border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-gray-900 mb-2">
+                            {formatDate(avail.date)}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-1 border border-gray-200 text-xs text-gray-500 rounded-full">
+                              {avail.recurrence}
+                            </span>
+                            {hasBooked && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                                {bookedSlots}/{totalSlots} booked
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleEdit(avail)}
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(avail)}
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {avail.timeSlots.map((slot, i) => (
+                          <div
+                            key={i}
+                            className={`flex items-center justify-between px-3 py-2 border rounded-md text-sm ${
+                              slot.isBooked
+                                ? "border-gray-300 bg-gray-50 text-gray-700"
+                                : "border-gray-200 bg-white text-gray-900"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <span>
+                                {formatTime(slot.start)} –{" "}
+                                {formatTime(slot.end)}
+                              </span>
+                            </div>
+                            {slot.isBooked && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                Booked
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
