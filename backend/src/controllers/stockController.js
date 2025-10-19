@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express';
 
 // Simulated in-memory database for stocks
 let stocks = [
@@ -97,7 +97,7 @@ function updateAllMarketCaps() {
 }
 
 // Controller to get all stocks with enhanced filtering and sorting
-exports.getAllStocks = (req, res) => {
+export function getAllStocks(req, res) {
     try {
         const { minPrice, maxPrice, sector, sortBy, order } = req.query;
         const validationError = validateQueryParams(req.query);
@@ -137,10 +137,10 @@ exports.getAllStocks = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get a single stock by ID
-exports.getStockById = (req, res) => {
+export function getStockById(req, res) {
     try {
         const stock = findStockById(req.params.id);
         if (!stock) {
@@ -151,10 +151,10 @@ exports.getStockById = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to create a new stock
-exports.createStock = (req, res) => {
+export function createStock(req, res) {
     try {
         const newStock = {
             id: generateStockId(),
@@ -178,10 +178,10 @@ exports.createStock = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to update an existing stock
-exports.updateStock = (req, res) => {
+export function updateStock(req, res) {
     try {
         const stockIndex = findStockIndexById(req.params.id);
         if (stockIndex === -1) {
@@ -209,10 +209,10 @@ exports.updateStock = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to delete a stock
-exports.deleteStock = (req, res) => {
+export function deleteStock(req, res) {
     try {
         const stockIndex = findStockIndexById(req.params.id);
         if (stockIndex === -1) {
@@ -226,10 +226,10 @@ exports.deleteStock = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get stock statistics
-exports.getStockStats = (req, res) => {
+export function getStockStats(req, res) {
     try {
         updateAllMarketCaps();
         const totalStocks = stocks.length;
@@ -251,10 +251,10 @@ exports.getStockStats = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get stocks by sector
-exports.getStocksBySector = (req, res) => {
+export function getStocksBySector(req, res) {
     try {
         const sector = req.params.sector;
         if (!sector || typeof sector !== 'string') {
@@ -275,10 +275,10 @@ exports.getStocksBySector = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get stock price history (simulated)
-exports.getStockPriceHistory = (req, res) => {
+export function getStockPriceHistory(req, res) {
     try {
         const stock = findStockById(req.params.id);
         if (!stock) {
@@ -302,10 +302,10 @@ exports.getStockPriceHistory = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to bulk create stocks
-exports.bulkCreateStocks = (req, res) => {
+export function bulkCreateStocks(req, res) {
     try {
         const newStocks = req.body;
         if (!Array.isArray(newStocks)) {
@@ -343,10 +343,10 @@ exports.bulkCreateStocks = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to bulk delete stocks
-exports.bulkDeleteStocks = (req, res) => {
+export function bulkDeleteStocks(req, res) {
     try {
         const ids = req.body.ids;
         if (!Array.isArray(ids)) {
@@ -375,10 +375,10 @@ exports.bulkDeleteStocks = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to search stocks by symbol or name
-exports.searchStocks = (req, res) => {
+export function searchStocks(req, res) {
     try {
         const query = req.query.q;
         if (!query || typeof query !== 'string') {
@@ -399,10 +399,10 @@ exports.searchStocks = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get top performing stocks
-exports.getTopPerformingStocks = (req, res) => {
+export function getTopPerformingStocks(req, res) {
     try {
         const limit = parseInt(req.query.limit) || 5;
         const metric = req.query.metric || 'price';
@@ -423,10 +423,10 @@ exports.getTopPerformingStocks = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to update stock price
-exports.updateStockPrice = (req, res) => {
+export function updateStockPrice(req, res) {
     try {
         const stockIndex = findStockIndexById(req.params.id);
         if (stockIndex === -1) {
@@ -448,10 +448,10 @@ exports.updateStockPrice = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to update stock quantity
-exports.updateStockQuantity = (req, res) => {
+export function updateStockQuantity(req, res) {
     try {
         const stockIndex = findStockIndexById(req.params.id);
         if (stockIndex === -1) {
@@ -473,10 +473,10 @@ exports.updateStockQuantity = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get low stock alerts
-exports.getLowStockAlerts = (req, res) => {
+export function getLowStockAlerts(req, res) {
     try {
         const threshold = parseInt(req.query.threshold) || 100;
         if (isNaN(threshold) || threshold < 0) {
@@ -493,10 +493,10 @@ exports.getLowStockAlerts = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get stock value
-exports.getStockValue = (req, res) => {
+export function getStockValue(req, res) {
     try {
         const stock = findStockById(req.params.id);
         if (!stock) {
@@ -514,10 +514,10 @@ exports.getStockValue = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to export stock data (simulated CSV)
-exports.exportStockData = (req, res) => {
+export function exportStockData(req, res) {
     try {
         updateAllMarketCaps();
         const csvHeader = 'ID,Symbol,Name,Price,Quantity,Sector,MarketCap,LastUpdated\n';
@@ -532,10 +532,10 @@ exports.exportStockData = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to import stock data (simulated from CSV)
-exports.importStockData = (req, res) => {
+export function importStockData(req, res) {
     try {
         const csvData = req.body.csv;
         if (!csvData || typeof csvData !== 'string') {
@@ -576,10 +576,10 @@ exports.importStockData = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get stock performance metrics
-exports.getStockPerformance = (req, res) => {
+export function getStockPerformance(req, res) {
     try {
         const stock = findStockById(req.params.id);
         if (!stock) {
@@ -604,10 +604,10 @@ exports.getStockPerformance = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get stock portfolio summary
-exports.getPortfolioSummary = (req, res) => {
+export function getPortfolioSummary(req, res) {
     try {
         updateAllMarketCaps();
         const totalValue = stocks.reduce((sum, stock) => sum + stock.marketCap, 0);
@@ -628,10 +628,10 @@ exports.getPortfolioSummary = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to add stock to watchlist
-exports.addToWatchlist = (req, res) => {
+export function addToWatchlist(req, res) {
     try {
         const stockId = parseInt(req.params.id);
         const validationError = validateWatchlistData(stockId);
@@ -656,10 +656,10 @@ exports.addToWatchlist = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to remove stock from watchlist
-exports.removeFromWatchlist = (req, res) => {
+export function removeFromWatchlist(req, res) {
     try {
         const stockId = parseInt(req.params.id);
         const validationError = validateWatchlistData(stockId);
@@ -684,10 +684,10 @@ exports.removeFromWatchlist = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get watchlist
-exports.getWatchlist = (req, res) => {
+export function getWatchlist(req, res) {
     try {
         updateAllMarketCaps();
         const watchlistStocks = watchlist.map(id => findStockById(id)).filter(stock => stock);
@@ -699,10 +699,10 @@ exports.getWatchlist = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get stock volatility (simulated)
-exports.getStockVolatility = (req, res) => {
+export function getStockVolatility(req, res) {
     try {
         const stock = findStockById(req.params.id);
         if (!stock) {
@@ -726,10 +726,10 @@ exports.getStockVolatility = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get stock correlations (simulated)
-exports.getStockCorrelations = (req, res) => {
+export function getStockCorrelations(req, res) {
     try {
         const stock = findStockById(req.params.id);
         if (!stock) {
@@ -754,10 +754,10 @@ exports.getStockCorrelations = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get sector performance
-exports.getSectorPerformance = (req, res) => {
+export function getSectorPerformance(req, res) {
     try {
         updateAllMarketCaps();
         const sectorPerformance = stocks.reduce((acc, stock) => {
@@ -786,10 +786,10 @@ exports.getSectorPerformance = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to simulate stock price update batch
-exports.batchUpdateStockPrices = (req, res) => {
+export function batchUpdateStockPrices(req, res) {
     try {
         const updates = req.body.updates;
         if (!Array.isArray(updates)) {
@@ -820,10 +820,10 @@ exports.batchUpdateStockPrices = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
 
 // Controller to get historical stock value (simulated)
-exports.getHistoricalStockValue = (req, res) => {
+export function getHistoricalStockValue(req, res) {
     try {
         const stock = findStockById(req.params.id);
         if (!stock) {
@@ -853,4 +853,1505 @@ exports.getHistoricalStockValue = (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-};
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
