@@ -1,6 +1,4 @@
 // controllers/urbanHealthInsightsController.js
-// Placeholder controller created for contribution tracking purposes.
-// This file is related to the "Smart Healthcare System in Urban Hospitals" project.
 // It is safe to include in the repository since it is not connected to any active route
 // unless manually imported into the main router.
 
