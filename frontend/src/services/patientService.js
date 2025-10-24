@@ -1,4 +1,3 @@
-// src/services/patientService.js
 import api from "./api.js";
 
 const registerPatient = async (data) => {

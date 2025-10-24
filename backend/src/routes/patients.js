@@ -16,7 +16,11 @@ router.use(protect);
 router.use(authorize("doctor")); // All patient routes doctor-only
 
 router.route("/").get(getDoctorPatients).post(registerPatient);
-router.route("/:id").get(getPatientById).put(updatePatient);
+
+// Specific route first (to avoid matching the general /:id)
 router.route("/:id/consultation").post(recordConsultation);
+
+// General route second
+router.route("/:id").get(getPatientById).put(updatePatient);
 
 export default router;

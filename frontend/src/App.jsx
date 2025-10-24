@@ -17,12 +17,10 @@ import Booking from "./pages/Patient/Booking.jsx";
 import PatientVisit from "./pages/Doctor/PatientVisit.jsx";
 import PatientDashboard from "./pages/Patient/Dashboard.jsx";
 import DoctorDashboard from "./pages/Doctor/Dashboard.jsx";
-import Navbar from "./components/Navbar.jsx";
 
 function App() {
   return (
     <div className="min-h-screen  bg-gray-50">
-      <Navbar />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
