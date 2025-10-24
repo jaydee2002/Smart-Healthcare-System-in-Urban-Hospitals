@@ -9,13 +9,19 @@ import {
   isWithinInterval,
   startOfDay,
 } from "date-fns";
+import path from "path";
+import fs from "fs";
 
-// @desc    Create new doctor
-// @route   POST /api/doctors
-// @access  Private/Admin
 const createDoctor = async (req, res) => {
   try {
-    const { name, qualification, specialization, hospitalId } = req.body;
+    const {
+      name,
+      age,
+      qualification,
+      specialization,
+      consultationRate,
+      hospitalId,
+    } = req.body; // Add age, consultationRate
 
     // Validate hospital exists
     const hospital = await Hospital.findById(hospitalId);
@@ -29,17 +35,34 @@ const createDoctor = async (req, res) => {
       return res.status(400).json({ message: "Doctor already exists" });
     }
 
+    // Handle image upload
+    let imagePath = null;
+    if (req.file) {
+      imagePath = `/uploads/doctors/${req.file.filename}`;
+    }
+
     const doctor = await Doctor.create({
       name,
+      age: age ? parseInt(age) : undefined, // Parse and optional
       qualification,
       specialization,
+      consultationRate: consultationRate
+        ? parseFloat(consultationRate)
+        : undefined, // Parse and optional
       hospital: hospitalId,
-      // Link to user if provided (from auth), else optional
-      user: req.user._id,
+      image: imagePath,
+      user: req.user._id, // From auth
     });
 
     res.status(201).json(doctor);
   } catch (error) {
+    // Clean up file on error
+    if (req.file) {
+      const fs = require("fs");
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Error deleting file:", err);
+      });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -91,7 +114,14 @@ const getDoctorById = async (req, res) => {
 // @access  Private/Admin
 const updateDoctor = async (req, res) => {
   try {
-    const { name, qualification, specialization, hospitalId } = req.body;
+    const {
+      name,
+      age,
+      qualification,
+      specialization,
+      consultationRate,
+      hospitalId,
+    } = req.body;
     const doctor = await Doctor.findById(req.params.id);
 
     if (!doctor) {
@@ -105,12 +135,33 @@ const updateDoctor = async (req, res) => {
       doctor.hospital = hospitalId;
     }
     if (name) doctor.name = name;
+    if (age) doctor.age = parseInt(age);
     if (qualification) doctor.qualification = qualification;
     if (specialization) doctor.specialization = specialization;
+    if (consultationRate)
+      doctor.consultationRate = parseFloat(consultationRate);
+
+    // Handle image update
+    if (req.file) {
+      // Delete old image if exists
+      if (doctor.image) {
+        const oldImagePath = path.join(process.cwd(), "public", doctor.image);
+        fs.unlink(oldImagePath, (err) => {
+          if (err) console.error("Error deleting old image:", err);
+        });
+      }
+      doctor.image = `/uploads/doctors/${req.file.filename}`;
+    }
 
     const updatedDoctor = await doctor.save();
     res.json(updatedDoctor);
   } catch (error) {
+    // Clean up new file on error
+    if (req.file && !res.headersSent) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Error deleting file:", err);
+      });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -124,6 +175,14 @@ const deleteDoctor = async (req, res) => {
 
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    // Delete image if exists
+    if (doctor.image) {
+      const imagePath = path.join(process.cwd(), "public", doctor.image);
+      fs.unlink(imagePath, (err) => {
+        if (err) console.error("Error deleting image:", err);
+      });
     }
 
     // Cascade delete appointments

@@ -50,9 +50,14 @@ const DoctorDashboard = () => {
                 <Menu className="h-6 w-6" />
               )}
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">
-              Doctor Dashboard
-            </h1>
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo.jpg" // 👈 replace with your hospital logo path
+                alt="Hospital Logo"
+                className="h-8 w-8 object-contain rounded-md"
+              />
+              <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <button className="relative text-gray-600 hover:text-gray-900">
@@ -69,7 +74,10 @@ const DoctorDashboard = () => {
               onClick={handleLogout}
               className="text-gray-600 hover:text-gray-900"
             >
-              <LogOut className="h-5 w-5" />
+              <div className="flex items-center gap-3">
+                <LogOut className="h-5 w-5" />
+                <span className="hidden md:inline text-sm">Logout</span>
+              </div>
             </button>
           </div>
         </div>

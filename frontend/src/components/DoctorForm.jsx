@@ -17,6 +17,7 @@ import {
   Building2,
   Image,
   Upload,
+  X, // Added for clear button
 } from "lucide-react";
 
 const DoctorForm = () => {
@@ -33,6 +34,7 @@ const DoctorForm = () => {
   const [hospitals, setHospitals] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null); // Separate state for file to ensure persistence
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -50,20 +52,61 @@ const DoctorForm = () => {
           const doctor = res.data;
           Object.keys(doctor).forEach((key) => setValue(key, doctor[key]));
           setValue("hospitalId", doctor.hospital?._id);
-          if (doctor.image) setImagePreview(doctor.image);
+          if (doctor.image)
+            setImagePreview(`http://localhost:5002${doctor.image}`); // Full URL
         })
         .catch(() => toast.error("Failed to load doctor details"));
     } else reset();
   }, [id, setValue, reset]);
 
   const onSubmit = async (data) => {
+    console.log("=== FRONTEND FORM SUBMIT DEBUG ===");
+    console.log("Form data object:", data);
+    console.log(
+      "Selected image state:",
+      selectedImage
+        ? {
+            name: selectedImage.name,
+            size: selectedImage.size,
+            type: selectedImage.type,
+          }
+        : "No file selected - will be null"
+    );
+
     setSubmitting(true);
     try {
       const formData = new FormData();
-      Object.keys(data).forEach((key) => {
-        if (key !== "image" || data.image?.[0]) formData.append(key, data[key]);
+      // Append non-file fields explicitly
+      const fields = [
+        "name",
+        "age",
+        "qualification",
+        "specialization",
+        "consultationRate",
+        "hospitalId",
+      ];
+      fields.forEach((key) => {
+        if (data[key] !== undefined && data[key] !== "") {
+          formData.append(key, data[key]);
+          console.log(`Appended ${key}:`, data[key]);
+        }
       });
-      if (data.image?.[0]) formData.append("image", data.image[0]);
+      // Append file from state (more reliable than form data)
+      if (selectedImage) {
+        formData.append("image", selectedImage);
+        console.log("Appended image file from state:", selectedImage.name);
+      } else {
+        console.log("No image appended - saving without photo");
+        if (!id)
+          toast("No image selected—doctor saved without profile photo.", {
+            icon: "⚠️",
+          });
+      }
+
+      // Log FormData for verification
+      for (let [key, value] of formData.entries()) {
+        console.log(key + ":", value.name || value); // File.name for files
+      }
 
       if (id) {
         await updateDoctor(id, formData);
@@ -74,6 +117,8 @@ const DoctorForm = () => {
       }
       navigate("/admin/doctors");
     } catch (error) {
+      console.error("Full error:", error);
+      console.error("Response:", error.response?.data);
       toast.error(error.response?.data?.message || "Error saving doctor");
     } finally {
       setSubmitting(false);
@@ -98,23 +143,50 @@ const DoctorForm = () => {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      if (file.type.startsWith("image/")) {
+      if (file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024) {
         setImagePreview(URL.createObjectURL(file));
-        setValue("image", [file]);
+        setSelectedImage(file); // Set in separate state
+        setValue("image", [file]); // Also set in form for validation
+        console.log("Dropped file set:", file.name);
       } else {
-        toast.error("Please upload a valid image file.");
+        toast.error(
+          file.type.startsWith("image/")
+            ? "File too large (max 5MB)"
+            : "Please upload a valid image file (PNG, JPG)."
+        );
       }
     }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith("image/")) {
-      setImagePreview(URL.createObjectURL(file));
-      setValue("image", [file]);
+    if (file) {
+      if (file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024) {
+        setImagePreview(URL.createObjectURL(file));
+        setSelectedImage(file); // Set in separate state
+        setValue("image", [file]); // Also set in form for validation
+        console.log("Selected file set:", file.name);
+      } else {
+        e.target.value = ""; // Clear invalid file
+        toast.error(
+          file.type.startsWith("image/")
+            ? "File too large (max 5MB)"
+            : "Please upload a valid image file (PNG, JPG)."
+        );
+      }
     } else {
-      toast.error("Please upload a valid image file.");
+      setSelectedImage(null); // Clear state
+      setValue("image", null); // Clear form
+      setImagePreview(null);
     }
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null); // Clear state
+    setValue("image", null); // Clear form
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    console.log("Image cleared");
   };
 
   return (
@@ -129,7 +201,11 @@ const DoctorForm = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        encType="multipart/form-data"
+        className="space-y-6"
+      >
         {/* Basic Info Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -262,7 +338,7 @@ const DoctorForm = () => {
         <div>
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
             <Image className="w-4 h-4 text-gray-400" />
-            Profile Image
+            Profile Image (Optional)
           </label>
           <div
             className={`relative border-2 border-dashed rounded-md p-6 text-center transition-colors ${
@@ -279,7 +355,7 @@ const DoctorForm = () => {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              {...register("image")}
+              {...register("image", { required: false })}
               onChange={handleImageChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
@@ -291,12 +367,19 @@ const DoctorForm = () => {
               <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
             </div>
             {imagePreview && (
-              <div className="mt-4 p-2 bg-gray-50 rounded-md">
+              <div className="mt-4 p-2 bg-gray-50 rounded-md flex items-center justify-center gap-2">
                 <img
                   src={imagePreview}
                   alt="Preview"
-                  className="w-16 h-16 rounded-full object-cover mx-auto"
+                  className="w-16 h-16 rounded-full object-cover"
                 />
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  className="text-gray-500 hover:text-gray-700 text-sm"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             )}
           </div>
