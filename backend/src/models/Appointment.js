@@ -6,7 +6,19 @@ const appointmentSchema = new mongoose.Schema(
     patient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Patient",
-      required: true,
+      required: false, // Not mandatory for new patients
+    },
+    patientName: {
+      type: String,
+      required: function () {
+        return !this.patient;
+      },
+    },
+    patientPhone: {
+      type: String,
+      required: function () {
+        return !this.patient;
+      },
     },
     doctor: {
       type: mongoose.Schema.Types.ObjectId,
@@ -14,13 +26,21 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
     },
     date: { type: Date, required: true },
-    timeSlot: { start: Date, end: Date },
+    timeSlot: {
+      start: { type: Date, required: true },
+      end: { type: Date, required: true },
+    },
     status: {
       type: String,
       enum: ["booked", "completed", "cancelled"],
       default: "booked",
     },
-    type: { type: String, enum: ["private", "government"] }, // For payment tracking
+    type: { type: String, enum: ["private", "government"], required: true },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "medium",
+    },
     paymentId: { type: String }, // For private hospitals
   },
   { timestamps: true }

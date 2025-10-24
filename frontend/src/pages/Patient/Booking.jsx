@@ -33,7 +33,7 @@ const Booking = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen  bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-full mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
           Book Appointment
@@ -47,7 +47,7 @@ const Booking = () => {
             <DoctorSearch onSelectDoctor={handleSelectDoctor} />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="max-w-5xl mx-auto space-y-6">
             {/* Doctor Details Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-start gap-4 mb-4">

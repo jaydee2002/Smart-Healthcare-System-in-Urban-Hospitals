@@ -4,8 +4,17 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { recordConsultation } from "../services/patientService.js";
 import toast from "react-hot-toast";
+import { useState } from "react";
 
 const ConsultationForm = ({ patientId, onSubmit }) => {
+  if (!patientId) {
+    return (
+      <div className="text-red-500">
+        Error: Patient ID is undefined. Please try registering again.
+      </div>
+    );
+  }
+
   const { register, handleSubmit, setValue } = useForm();
   const [followUpDate, setFollowUpDate] = useState(null);
 

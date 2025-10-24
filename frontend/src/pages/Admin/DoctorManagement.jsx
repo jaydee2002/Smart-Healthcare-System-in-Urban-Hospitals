@@ -23,7 +23,6 @@ const DoctorManagement = () => {
           <Outlet />
         </div>
       </div>
-      <AvailabilityCalender />
     </>
   );
 };
