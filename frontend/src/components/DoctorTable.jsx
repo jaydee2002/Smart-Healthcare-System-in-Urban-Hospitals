@@ -82,13 +82,36 @@ const DoctorTable = ({ onEdit }) => {
       .toUpperCase();
   };
 
-  // Avatar Component
-  const Avatar = ({ name }) => {
+  // Doctor Avatar Component (Image with fallback to initials)
+  const DoctorAvatar = ({ doctor }) => {
+    console.log(doctor.image);
+    const imageUrl = doctor.image
+      ? `http://localhost:5001${doctor.image}`
+      : null;
     return (
-      <div className="w-10 h-10 bg-gray-500 rounded-lg flex items-center justify-center flex-shrink-0">
-        <span className="text-white text-sm font-bold">
-          {getInitials(name)}
-        </span>
+      <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={`${doctor.name}'s profile`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              e.target.style.display = "none";
+              const fallback = e.target.nextSibling;
+              if (fallback) fallback.style.display = "flex";
+            }}
+          />
+        ) : null}
+        <div
+          className={`w-full h-full bg-gray-500 flex items-center justify-center flex-shrink-0 absolute inset-0 ${
+            imageUrl ? "hidden" : ""
+          }`}
+        >
+          <span className="text-white text-sm font-bold">
+            {getInitials(doctor.name)}
+          </span>
+        </div>
       </div>
     );
   };
@@ -150,7 +173,7 @@ const DoctorTable = ({ onEdit }) => {
           {/* Doctor Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
-              <Avatar name={doctor.name} />
+              <DoctorAvatar doctor={doctor} />
               <div className="min-w-0">
                 <h3 className="font-semibold text-gray-900 truncate text-sm">
                   {doctor.name}

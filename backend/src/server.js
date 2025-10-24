@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
 
 import connectDB from "./config/db.js";
 
@@ -23,6 +25,9 @@ app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
+// Serve uploaded images statically - ADDED
+app.use("/uploads", express.static("uploads"));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/doctors", doctorRoutes);
@@ -32,6 +37,13 @@ app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/reports", reportRoutes);
 
 const PORT = process.env.PORT || 5002;
+
+// Ensure uploads folder exists - ADDED
+const uploadsDir = path.join(process.cwd(), "uploads/doctors");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log("📁 Created uploads/doctors directory");
+}
 
 const startServer = async () => {
   try {

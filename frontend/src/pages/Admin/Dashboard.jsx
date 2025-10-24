@@ -14,12 +14,14 @@ import {
   Building2,
 } from "lucide-react"; // Added icons
 import toast from "react-hot-toast";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const AdminDashboard = () => {
+  const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    // your logout logic here
+    logout();
     toast.success("Logged out successfully");
   };
 
@@ -32,37 +34,48 @@ const AdminDashboard = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="bg-black shadow-sm flex-shrink-0 z-40">
+      <header className="bg-white shadow-sm flex-shrink-0 z-40">
         <div className="max-w-full mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Left section with logo + title */}
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.jpg" // 👈 replace with your hospital logo path
-              alt="Hospital Logo"
-              className="h-8 w-8 object-contain rounded-lg"
-            />
-            <h1 className="text-xl font-semibold text-white">
-              Admin Dashboard
-            </h1>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="lg:hidden text-gray-600 hover:text-gray-900"
+            >
+              {isSidebarOpen ? (
+                <XMarkIcon className="h-6 w-6" />
+              ) : (
+                <Bars3Icon className="h-6 w-6" />
+              )}
+            </button>
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo.jpg" // 👈 replace with your hospital logo path
+                alt="Hospital Logo"
+                className="h-8 w-8 object-contain rounded-md"
+              />
+              <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+            </div>
           </div>
 
-          {/* Right section */}
           <div className="flex items-center gap-4">
-            <button className="relative text-gray-300 hover:text-white">
+            <button className="relative text-gray-600 hover:text-gray-900">
               <BellIcon className="h-5 w-5" />
               <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
             </button>
-            <div className="flex items-center gap-2 text-gray-300">
-              <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center text-sm">
+            <div className="flex items-center gap-2 text-gray-600">
+              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">
                 AD
               </div>
               <span className="hidden md:inline text-sm">Admin</span>
             </div>
             <button
               onClick={handleLogout}
-              className="text-gray-300 hover:text-white"
+              className="text-gray-600 hover:text-gray-900"
             >
-              <LogOutIcon className="h-5 w-5" />
+              <div className="flex items-center gap-3">
+                <LogOutIcon className="h-5 w-5" />
+                <span className="hidden md:inline text-sm">Logout</span>
+              </div>
             </button>
           </div>
         </div>
