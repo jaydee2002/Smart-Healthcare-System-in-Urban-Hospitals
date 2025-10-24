@@ -4,10 +4,39 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node seed.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "test": "jest --runInBand",
+    "test:all": "jest --runInBand --coverage",
+    "test:doctor": "jest --runInBand tests/controllers/doctorController.test.js --coverage",
+    "test:patient": "jest --runInBand tests/controllers/patientController.test.js --coverage",
+    "test:appointment": "jest --runInBand tests/controllers/appointmentController.test.js --coverage",
+    "test:report": "jest --runInBand tests/controllers/reportController.test.js --coverage --collectCoverageFrom=src/controllers/reportController.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": { "^.+\\.jsx?$": "babel-jest" },
+    "roots": ["<rootDir>/tests"],
+    "resetMocks": true,
+    "restoreMocks": true,
+    "clearMocks": true,
+
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "src/controllers/**/*.js",     
+      "!src/controllers/**/__mocks__/**",
+      "!src/**/index.js"
+    ],
+    "coverageReporters": ["text", "lcov"],
+
+    "coverageThreshold": {
+      "global": {
+        "branches": 60,
+        "functions": 75,
+        "lines": 80,
+        "statements": 80
+      }
+    }
   },
   "keywords": [],
   "author": "",
@@ -27,6 +56,9 @@
     "stripe": "^19.1.0"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.28.5",
+    "babel-jest": "^30.2.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.10"
   }
 }

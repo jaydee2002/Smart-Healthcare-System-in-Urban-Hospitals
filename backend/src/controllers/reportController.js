@@ -6,7 +6,6 @@ import {
   startOfDay,
   endOfDay,
   addDays,
-  addWeeks,
   startOfWeek,
   startOfMonth,
 } from "date-fns";
@@ -23,6 +22,7 @@ const getDateRange = (type, baseDate = new Date()) => {
         end: endOfDay(addDays(startOfWeek(now), 6)),
       };
     case "monthly":
+      // Simplified month end: +30 days from month start
       return {
         start: startOfMonth(now),
         end: endOfDay(addDays(startOfMonth(now), 30)),
@@ -40,9 +40,8 @@ const generateReport = async (req, res) => {
     const { type } = req.params;
     const { hospital, startDate, endDate } = req.query; // Filters
 
-    // Build query for appointments
-    let matchQuery = { status: { $ne: "cancelled" } }; // Exclude cancelled
-    if (hospital) matchQuery.hospital = hospital; // Wait, appointments don't have hospital directly; join via doctor
+    // Build match for appointments by date/status (appointments don't store hospital directly)
+    const matchQuery = { status: { $ne: "cancelled" } };
     if (startDate && endDate) {
       matchQuery.date = {
         $gte: new Date(startDate),
@@ -65,6 +64,8 @@ const generateReport = async (req, res) => {
         },
       },
       { $unwind: "$doctorDetails" },
+      // ✅ If hospital filter provided, match by doctor.hospital *after* lookup
+      ...(hospital ? [{ $match: { "doctorDetails.hospital": hospital } }] : []),
       {
         $group: {
           _id: {
@@ -72,6 +73,7 @@ const generateReport = async (req, res) => {
             hospital: "$doctorDetails.hospital",
           },
           patientCount: { $sum: 1 },
+          // keep simple structure for later flattening
           appointments: { $push: { time: "$timeSlot.start", type: "$type" } },
         },
       },
@@ -79,14 +81,15 @@ const generateReport = async (req, res) => {
         $group: {
           _id: "$_id.hospital",
           totalPatients: { $sum: "$patientCount" },
+          // track max by pushing objects & maxing on count field
           peakDate: {
             $max: {
               date: "$_id.date",
               count: "$patientCount",
             },
           },
-          utilization: { $avg: { $divide: ["$patientCount", 10] } }, // Simplified % (assume 10 slots/day)
-          peakTimes: { $push: "$appointments" }, // For analysis
+          utilization: { $avg: { $divide: ["$patientCount", 10] } }, // Simplified utilization
+          peakTimes: { $push: "$appointments" }, // array of arrays of { time, type }
         },
       },
       {
@@ -104,7 +107,19 @@ const generateReport = async (req, res) => {
 
     const metrics = await Appointment.aggregate(pipeline);
 
-    // Flatten metrics
+    // Flatten metrics into final report structure
+    const peakTimesFlat = [];
+    for (const m of metrics) {
+      if (Array.isArray(m.peakTimes)) {
+        const flat = m.peakTimes.flat().filter(Boolean);
+        for (const pt of flat) {
+          if (pt && pt.time) {
+            peakTimesFlat.push({ time: pt.time });
+          }
+        }
+      }
+    }
+
     const reportData = {
       type,
       filters: { hospital, startDate, endDate },
@@ -116,11 +131,7 @@ const generateReport = async (req, res) => {
         averageUtilization:
           metrics.reduce((sum, m) => sum + (m.utilization || 0), 0) /
           (metrics.length || 1),
-        peakTimes: metrics.flatMap(
-          (m) =>
-            m.peakTimes?.map((pt) => ({ time: pt.time, count: pt.length })) ||
-            []
-        ),
+        peakTimes: peakTimesFlat,
         hospitalBreakdown: metrics.map((m) => ({
           hospital: m.hospitalDetails?.name || "Unknown",
           patients: m.totalPatients,
@@ -149,14 +160,13 @@ const generateReport = async (req, res) => {
 const getReports = async (req, res) => {
   try {
     const { type, limit = 10 } = req.query;
-    let query = {};
-
+    const query = {};
     if (type) query.type = type;
 
     const reports = await Report.find(query)
       .populate("generatedBy", "name")
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit));
+      .limit(parseInt(limit, 10));
 
     res.json(reports);
   } catch (error) {

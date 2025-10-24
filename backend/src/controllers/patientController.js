@@ -57,129 +57,6 @@ const registerPatient = async (req, res) => {
   }
 };
 
-// // @desc    Record consultation for patient
-// // @route   POST /api/patients/:id/consultation
-// // @access  Private/Doctor
-// const recordConsultation = async (req, res) => {
-//   try {
-//     const { diagnosis, treatment, medications, followUpDate } = req.body;
-//     const patientId = req.params.id;
-//     const userId = req.user._id; // This is the User _id from auth
-
-//     console.log("Recording consultation for User ID:", userId);
-
-//     const patient = await Patient.findById(patientId);
-//     if (!patient) {
-//       return res.status(404).json({ message: "Patient not found" });
-//     }
-
-//     // Parse diagnosis (handles string or array from frontend)
-//     let parsedDiagnosis = [];
-//     if (typeof diagnosis === "string") {
-//       parsedDiagnosis = diagnosis
-//         .split(",")
-//         .map((d) => d.trim())
-//         .filter((d) => d);
-//     } else if (Array.isArray(diagnosis)) {
-//       parsedDiagnosis = diagnosis.filter((d) => d.trim()); // Filter empty in case
-//     }
-
-//     // Parse treatment similarly (handles string or array from frontend)
-//     let parsedTreatment = [];
-//     if (typeof treatment === "string") {
-//       parsedTreatment = treatment
-//         .split(",")
-//         .map((t) => t.trim())
-//         .filter((t) => t);
-//     } else if (Array.isArray(treatment)) {
-//       parsedTreatment = treatment.filter((t) => t.trim()); // Filter empty in case
-//     }
-
-//     // Parse medications (handles string or array of objects from frontend)
-//     let parsedMedications = [];
-//     if (typeof medications === "string") {
-//       parsedMedications = medications
-//         .split(",")
-//         .map((med) => {
-//           const [name, dosage] = med.trim().split(":");
-//           return { name: name?.trim() || "", dosage: dosage?.trim() || "" };
-//         })
-//         .filter((m) => m.name); // Filter invalid
-//     } else if (Array.isArray(medications)) {
-//       parsedMedications = medications.filter((m) => m.name && m.name.trim()); // Filter empty/invalid
-//     }
-
-//     // Add new record
-//     patient.records.push({
-//       diagnosis: parsedDiagnosis,
-//       treatment: parsedTreatment,
-//       medications: parsedMedications,
-//       followUpDate,
-//     });
-
-//     await patient.save();
-
-//     // Schedule follow-up appointment if date provided
-//     let followUpAppointment = null;
-//     if (followUpDate) {
-//       const doctor = await Doctor.findOne({ user: userId }); // Find by user _id, not doctor _id
-//       if (!doctor) {
-//         return res.status(404).json({ message: "Doctor not found" });
-//       }
-//       // Optional: Skip if past date
-//       if (new Date(followUpDate) < new Date()) {
-//         res.json({
-//           ...patient.toObject(),
-//           message:
-//             "Consultation recorded; follow-up date is in the past, no appointment scheduled",
-//         });
-//         return;
-//       }
-//       // Find next available slot (simplified: use first available on that date)
-//       const availDate = doctor.availability.find(
-//         (a) => a.date.toDateString() === new Date(followUpDate).toDateString()
-//       );
-//       if (availDate && availDate.timeSlots.some((s) => !s.isBooked)) {
-//         const freeSlot = availDate.timeSlots.find((s) => !s.isBooked);
-//         followUpAppointment = await Appointment.create({
-//           patient: patientId,
-//           doctor: doctor._id, // Use doctor._id here
-//           date: new Date(followUpDate),
-//           timeSlot: freeSlot.time, // Assuming schema expects string; adjust if needed
-//           status: "booked",
-//           type: doctor.hospital?.type || "default",
-//         });
-
-//         // Mark slot booked
-//         const slotIndex = availDate.timeSlots.findIndex(
-//           (s) => s.time === freeSlot.time
-//         ); // Better match by time if objects differ
-//         if (slotIndex !== -1) {
-//           availDate.timeSlots[slotIndex].isBooked = true;
-//         }
-//         await doctor.save();
-//       } else {
-//         // Suggest next slot (placeholder)
-//         res.json({
-//           ...patient.toObject(),
-//           message:
-//             "Consultation recorded; follow-up slot unavailable, suggest rescheduling",
-//         });
-//         return;
-//       }
-//     }
-
-//     res.json({
-//       ...patient.toObject(),
-//       followUpAppointment,
-//       message: "Consultation recorded successfully",
-//     });
-//   } catch (error) {
-//     console.error(error); // Add for debugging
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
 // @desc    Record consultation for patient
 // @route   POST /api/patients/:id/consultation
 // @access  Private/Doctor
@@ -204,7 +81,8 @@ const recordConsultation = async (req, res) => {
         .map((d) => d.trim())
         .filter((d) => d);
     } else if (Array.isArray(diagnosis)) {
-      parsedDiagnosis = diagnosis.filter((d) => d.trim()); // Filter empty in case
+      // ✅ trim array items as well (previously only filtered)
+      parsedDiagnosis = diagnosis.map((d) => d.trim()).filter((d) => d);
     }
 
     // Parse treatment similarly (handles string or array from frontend)
@@ -215,7 +93,8 @@ const recordConsultation = async (req, res) => {
         .map((t) => t.trim())
         .filter((t) => t);
     } else if (Array.isArray(treatment)) {
-      parsedTreatment = treatment.filter((t) => t.trim()); // Filter empty in case
+      // ✅ trim array items as well
+      parsedTreatment = treatment.map((t) => t.trim()).filter((t) => t);
     }
 
     // Parse medications (handles string or array of objects from frontend)
@@ -229,7 +108,13 @@ const recordConsultation = async (req, res) => {
         })
         .filter((m) => m.name); // Filter invalid
     } else if (Array.isArray(medications)) {
-      parsedMedications = medications.filter((m) => m.name && m.name.trim()); // Filter empty/invalid
+      // ✅ normalize objects by trimming too
+      parsedMedications = medications
+        .map((m) => ({
+          name: (m.name ?? "").trim(),
+          dosage: (m.dosage ?? "").trim(),
+        }))
+        .filter((m) => m.name);
     }
 
     // Add new record (with consultation date and followUpDate if provided)

@@ -21,7 +21,7 @@ const createDoctor = async (req, res) => {
       specialization,
       consultationRate,
       hospitalId,
-    } = req.body; // Add age, consultationRate
+    } = req.body;
 
     // Validate hospital exists
     const hospital = await Hospital.findById(hospitalId);
@@ -43,22 +43,19 @@ const createDoctor = async (req, res) => {
 
     const doctor = await Doctor.create({
       name,
-      age: age ? parseInt(age) : undefined, // Parse and optional
+      age: age ? parseInt(age) : undefined,
       qualification,
       specialization,
-      consultationRate: consultationRate
-        ? parseFloat(consultationRate)
-        : undefined, // Parse and optional
+      consultationRate: consultationRate ? parseFloat(consultationRate) : undefined,
       hospital: hospitalId,
       image: imagePath,
-      user: req.user._id, // From auth
+      user: req.user?._id,
     });
 
     res.status(201).json(doctor);
   } catch (error) {
-    // Clean up file on error
+    // Clean up file on error (ESM-safe: use imported fs)
     if (req.file) {
-      const fs = require("fs");
       fs.unlink(req.file.path, (err) => {
         if (err) console.error("Error deleting file:", err);
       });
@@ -130,16 +127,14 @@ const updateDoctor = async (req, res) => {
 
     if (hospitalId) {
       const hospital = await Hospital.findById(hospitalId);
-      if (!hospital)
-        return res.status(400).json({ message: "Invalid hospital" });
+      if (!hospital) return res.status(400).json({ message: "Invalid hospital" });
       doctor.hospital = hospitalId;
     }
     if (name) doctor.name = name;
     if (age) doctor.age = parseInt(age);
     if (qualification) doctor.qualification = qualification;
     if (specialization) doctor.specialization = specialization;
-    if (consultationRate)
-      doctor.consultationRate = parseFloat(consultationRate);
+    if (consultationRate) doctor.consultationRate = parseFloat(consultationRate);
 
     // Handle image update
     if (req.file) {
@@ -188,14 +183,17 @@ const deleteDoctor = async (req, res) => {
     // Cascade delete appointments
     await Appointment.deleteMany({ doctor: req.params.id });
 
-    await doctor.remove();
+    // Remove doctor
+    await doctor.deleteOne();
     res.json({ message: "Doctor removed" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Helper function for overlap check
+/**
+ * Helper: check for overlaps safely (no assumption that _id exists on subdocs)
+ */
 const checkOverlaps = (
   date,
   newSlots,
@@ -205,11 +203,15 @@ const checkOverlaps = (
   const targetDate = startOfDay(new Date(date));
   const dayEnd = addDays(targetDate, 1);
 
-  const relevantAvails = existingAvailabilities.filter(
-    (a) =>
-      a._id.toString() !== excludeId &&
-      isWithinInterval(new Date(a.date), { start: targetDate, end: dayEnd })
-  );
+  const relevantAvails = existingAvailabilities.filter((a) => {
+    const idStr = a?._id ? String(a._id) : null;
+    const notExcluded = excludeId ? idStr !== excludeId : true;
+    const inSameDay = isWithinInterval(new Date(a.date), {
+      start: targetDate,
+      end: dayEnd,
+    });
+    return notExcluded && inSameDay;
+  });
 
   for (let newSlot of newSlots) {
     for (let avail of relevantAvails) {
@@ -254,31 +256,34 @@ const setAvailability = async (req, res) => {
     });
 
     // Apply recurrence if set (generate up to 1 month ahead, check overlaps for each)
-    if (recurrence !== "none") {
+    if (recurrence && recurrence !== "none") {
       let currentDate = new Date(date);
-      const endDate = addMonths(currentDate, 1);
-      while (currentDate < endDate) {
+      const endDate = addMonths(new Date(date), 1);
+
+      while (true) {
         if (recurrence === "daily") currentDate = addDays(currentDate, 1);
-        else if (recurrence === "weekly")
-          currentDate = addWeeks(currentDate, 1);
-        else if (recurrence === "monthly")
-          currentDate = addMonths(currentDate, 1);
+        else if (recurrence === "weekly") currentDate = addWeeks(currentDate, 1);
+        else if (recurrence === "monthly") currentDate = addMonths(currentDate, 1);
+        else break; // guard for unexpected values
+
+        if (currentDate >= endDate) break;
 
         if (checkOverlaps(currentDate, newSlots, doctor.availability)) {
           continue; // Skip if overlap on recurring date
         }
 
+        // Build slots for this currentDate without mutating previous dates
+        const slotsForDate = newSlots.map((s) => {
+          const start = new Date(currentDate);
+          start.setHours(s.start.getHours(), s.start.getMinutes(), 0, 0);
+          const end = new Date(currentDate);
+          end.setHours(s.end.getHours(), s.end.getMinutes(), 0, 0);
+          return { start, end, isBooked: false };
+        });
+
         doctor.availability.push({
-          date: currentDate,
-          timeSlots: newSlots.map((s) => ({
-            start: new Date(
-              currentDate.setHours(s.start.getHours(), s.start.getMinutes())
-            ),
-            end: new Date(
-              currentDate.setHours(s.end.getHours(), s.end.getMinutes())
-            ),
-            isBooked: false,
-          })),
+          date: new Date(currentDate),
+          timeSlots: slotsForDate,
           recurrence,
         });
       }
@@ -338,12 +343,7 @@ const updateAvailability = async (req, res) => {
 
     // Check for overlaps (exclude self)
     if (
-      checkOverlaps(
-        updateDate,
-        updateSlots,
-        doctor.availability,
-        req.params.availId
-      )
+      checkOverlaps(updateDate, updateSlots, doctor.availability, req.params.availId)
     ) {
       return res.status(400).json({ message: "Overlapping time slot" });
     }
@@ -352,8 +352,6 @@ const updateAvailability = async (req, res) => {
     avail.date = updateDate;
     avail.timeSlots = updateSlots;
     avail.recurrence = recurrence || avail.recurrence;
-
-    // Note: If recurrence changes, no auto-generation of new entries; treat as single update
 
     await doctor.save();
     res.json(avail);

@@ -15,7 +15,7 @@ const searchDoctors = async (req, res) => {
     let query = {};
 
     if (hospitalType) {
-      // Match via hospital type
+      // Match via hospital type (assumes denormalized or virtual path)
       query["hospital.type"] = hospitalType;
     }
     if (name) {
@@ -28,7 +28,7 @@ const searchDoctors = async (req, res) => {
 
     const doctors = await Doctor.find(query)
       .populate("hospital", "name type")
-      .select("name qualification specialization availability"); // Include avail for slot preview
+      .select("name qualification specialization availability");
 
     res.json(doctors);
   } catch (error) {
@@ -75,7 +75,7 @@ const getAvailableSlots = async (req, res) => {
         });
     }
 
-    res.json({ hospitalType: doctor.hospital.type, slots: availSlots });
+    res.json({ hospitalType: doctor.hospital?.type, slots: availSlots });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -87,12 +87,11 @@ const getAvailableSlots = async (req, res) => {
 const bookAppointment = async (req, res) => {
   try {
     const { doctorId, slot } = req.body; // slot: {start, end, date}
-    const patientId = req.user._id; // From auth middleware (assume patient role links to Patient model)
+    const patientId = req.user._id; // From auth middleware
 
-    // Get patient profile
+    // Get patient profile (or create bare-bones from user)
     let patient = await Patient.findOne({ user: patientId });
     if (!patient) {
-      // Create if new (simplified; full reg in Use Case 4)
       patient = await Patient.create({
         name: req.user.name,
         email: req.user.email,
@@ -100,15 +99,16 @@ const bookAppointment = async (req, res) => {
       });
     }
 
-    // Get doctor and slot
+    // Get doctor
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
 
-    const hospitalType = doctor.hospital.type; // Wait, populate hospital
-    doctor.populate("hospital");
-    const isPrivate = doctor.hospital.type === "private";
+    // ✅ FIX: properly populate before using doctor.hospital.type
+    await doctor.populate("hospital");
+    const hospitalType = doctor.hospital?.type || "default";
+    const isPrivate = hospitalType === "private";
 
     // Check slot availability
     const availDate = doctor.availability.find(
@@ -165,7 +165,7 @@ const bookAppointment = async (req, res) => {
 
     res.status(201).json({
       ...appointment.toObject(),
-      qrCode: "mock-qr-" + appointment._id, // Placeholder; full QR in Step 7
+      qrCode: "mock-qr-" + appointment._id, // Placeholder
       message: "Appointment booked successfully",
     });
   } catch (error) {
@@ -181,7 +181,7 @@ const getMyAppointments = async (req, res) => {
     const patientId = req.user._id;
     const appointments = await Appointment.find({ patient: patientId })
       .populate("doctor", "name specialization")
-      .populate("hospital", "name") // Via doctor.hospital
+      .populate("hospital", "name") // optional; depends on schema
       .sort({ date: -1 });
     res.json(appointments);
   } catch (error) {
