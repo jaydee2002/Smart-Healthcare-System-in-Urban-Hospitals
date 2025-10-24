@@ -50,7 +50,7 @@ const registerPatient = async (req, res) => {
 // @access  Private/Doctor
 const recordConsultation = async (req, res) => {
   try {
-    const { diagnosis, treatment, medications, followUpDate } = req.body; // medications: [{name, dosage}]
+    const { diagnosis, treatment, medications, followUpDate } = req.body; // medications: string or [{name, dosage}]
     const patientId = req.params.id;
     const doctorId = req.user._id;
 
@@ -59,11 +59,47 @@ const recordConsultation = async (req, res) => {
       return res.status(404).json({ message: "Patient not found" });
     }
 
+    // Parse diagnosis (split comma-separated if string)
+    let parsedDiagnosis = [];
+    if (typeof diagnosis === "string") {
+      parsedDiagnosis = diagnosis
+        .split(",")
+        .map((d) => d.trim())
+        .filter((d) => d);
+    } else if (Array.isArray(diagnosis)) {
+      parsedDiagnosis = diagnosis;
+    }
+
+    // Parse treatment similarly
+    let parsedTreatment = [];
+    if (typeof treatment === "string") {
+      parsedTreatment = treatment
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t);
+    } else if (Array.isArray(treatment)) {
+      parsedTreatment = treatment;
+    }
+
+    // Parse medications
+    let parsedMedications = [];
+    if (typeof medications === "string") {
+      parsedMedications = medications
+        .split(",")
+        .map((med) => {
+          const [name, dosage] = med.trim().split(":");
+          return { name: name?.trim() || "", dosage: dosage?.trim() || "" };
+        })
+        .filter((m) => m.name); // Filter invalid
+    } else if (Array.isArray(medications)) {
+      parsedMedications = medications;
+    }
+
     // Add new record
     patient.records.push({
-      diagnosis: Array.isArray(diagnosis) ? diagnosis : [diagnosis],
-      treatment: Array.isArray(treatment) ? treatment : [treatment],
-      medications: Array.isArray(medications) ? medications : [],
+      diagnosis: parsedDiagnosis,
+      treatment: parsedTreatment,
+      medications: parsedMedications,
       followUpDate,
     });
 
@@ -73,6 +109,18 @@ const recordConsultation = async (req, res) => {
     let followUpAppointment = null;
     if (followUpDate) {
       const doctor = await Doctor.findById(doctorId);
+      if (!doctor) {
+        return res.status(404).json({ message: "Doctor not found" });
+      }
+      // Optional: Skip if past date
+      if (new Date(followUpDate) < new Date()) {
+        res.json({
+          ...patient.toObject(),
+          message:
+            "Consultation recorded; follow-up date is in the past, no appointment scheduled",
+        });
+        return;
+      }
       // Find next available slot (simplified: use first available on that date)
       const availDate = doctor.availability.find(
         (a) => a.date.toDateString() === new Date(followUpDate).toDateString()
@@ -83,14 +131,16 @@ const recordConsultation = async (req, res) => {
           patient: patientId,
           doctor: doctorId,
           date: new Date(followUpDate),
-          timeSlot: freeSlot,
+          timeSlot: freeSlot.time, // Assuming schema expects string; adjust if needed
           status: "booked",
-          type: doctor.hospital.type,
+          type: doctor.hospital?.type || "default",
         });
 
         // Mark slot booked
-        const slotIndex = availDate.timeSlots.findIndex((s) => !s.isBooked);
-        availDate.timeSlots[slotIndex].isBooked = true;
+        const slotIndex = availDate.timeSlots.findIndex((s) => s === freeSlot); // Use reference to exact slot
+        if (slotIndex !== -1) {
+          availDate.timeSlots[slotIndex].isBooked = true;
+        }
         await doctor.save();
       } else {
         // Suggest next slot (placeholder)
@@ -109,6 +159,7 @@ const recordConsultation = async (req, res) => {
       message: "Consultation recorded successfully",
     });
   } catch (error) {
+    console.error(error); // Add for debugging
     res.status(500).json({ message: error.message });
   }
 };

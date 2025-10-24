@@ -158,7 +158,7 @@ const AvailabilityCalendar = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen  bg-white p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -399,7 +399,7 @@ const AvailabilityCalendar = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-3">
               {availabilities
                 .sort((a, b) => new Date(a.date) - new Date(b.date))
                 .map((avail) => {

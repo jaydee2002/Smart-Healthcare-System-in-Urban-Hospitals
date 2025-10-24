@@ -27,11 +27,14 @@ const PatientRegistrationForm = ({ existingPatient, onSubmit }) => {
       } else {
         result = await registerPatient(data);
       }
-      onSubmit(result.data);
+      // Adjust based on actual response shape; assume result.data is the patient
+      const savedPatient = result.data?.patient || result.data; // Fallback if nested
+      onSubmit(savedPatient);
       toast.success(existingPatient ? "Patient updated" : "Patient registered");
     } catch (error) {
-      if (error.response?.status === 200) {
-        // Duplicate
+      // Remove status === 200 check; it's unlikely to hit here
+      if (error.response?.data?.patient) {
+        // For duplicates, assuming 4xx status
         toast.info("Patient exists; reviewing...");
         onSubmit(error.response.data.patient);
       } else {

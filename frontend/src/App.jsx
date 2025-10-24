@@ -21,7 +21,7 @@ import Navbar from "./components/Navbar.jsx";
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen  bg-gray-50">
       <Navbar />
       <Routes>
         <Route path="/login" element={<Login />} />
