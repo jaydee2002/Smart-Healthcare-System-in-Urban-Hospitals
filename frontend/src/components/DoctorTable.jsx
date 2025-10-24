@@ -294,7 +294,7 @@ const DoctorTable = ({ onEdit }) => {
   };
 
   return (
-    <div className="w-full space-y-6 p-6">
+    <div className="w-full space-y-6 px-6">
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h2 className="text-3xl font-bold text-gray-900">Doctors</h2>
