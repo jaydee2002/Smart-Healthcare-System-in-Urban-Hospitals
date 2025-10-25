@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@stripe/react-stripe-js": "^5.2.0",
+    "@stripe/stripe-js": "^8.1.0",
     "axios": "^1.12.2",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",

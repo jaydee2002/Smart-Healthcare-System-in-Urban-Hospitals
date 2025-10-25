@@ -6,6 +6,7 @@ import {
   bookAppointment,
   getMyAppointments,
   cancelAppointment,
+  createPaymentIntent,
 } from "../controllers/appointmentController.js";
 import protect from "../middleware/auth.js";
 import authorize from "../middleware/roleAuth.js";
@@ -22,5 +23,6 @@ router.get("/:doctorId/slots", getAvailableSlots);
 router.post("/book", bookAppointment);
 router.get("/my", getMyAppointments);
 router.delete("/:id", cancelAppointment);
+router.post("/payment/intent", createPaymentIntent);
 
 export default router;

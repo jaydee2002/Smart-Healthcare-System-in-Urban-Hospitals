@@ -1,8 +1,12 @@
 // src/pages/Patient/Booking.jsx
 import { useState } from "react";
+import { loadStripe } from "@stripe/stripe-js"; // FIXED: Added import
+import { Elements } from "@stripe/react-stripe-js"; // FIXED: Added import
 import DoctorSearch from "../../components/DoctorSearch.jsx";
 import SlotSelector from "../../components/SlotSelector.jsx";
 import BookingModal from "../../components/BookingModal.jsx";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY); // FIXED: Defined here (top-level)
 
 const Booking = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -24,6 +28,13 @@ const Booking = () => {
     setConfirmation(data);
   };
 
+  // Helper to get full image URL (FIX: Prepend backend base URL)
+  const getDoctorImageUrl = (imagePath) => {
+    if (!imagePath) return "/default-doctor.jpg"; // Fallback to local default
+    return `http://localhost:5001${imagePath}`; // Backend base + path (no /api for static)
+  };
+
+  // Helper function to get initials
   const getInitials = (name) => {
     return name
       .split(" ")
@@ -32,8 +43,37 @@ const Booking = () => {
       .toUpperCase();
   };
 
+  // Doctor Avatar Component (Image with fallback to initials)
+  const DoctorAvatar = ({ doctor }) => {
+    const imageUrl = getDoctorImageUrl(doctor.image);
+    return (
+      <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={`${doctor.name}'s profile`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              e.target.style.display = "none";
+              const fallback = e.target.nextSibling;
+              if (fallback) fallback.style.display = "flex";
+            }}
+          />
+        ) : null}
+        <div
+          className={`w-full h-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium absolute inset-0 ${
+            imageUrl ? "hidden" : ""
+          }`}
+        >
+          <span className="text-sm">{getInitials(doctor.name)}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen  bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-full mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
           Book Appointment
@@ -51,11 +91,8 @@ const Booking = () => {
             {/* Doctor Details Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-start gap-4 mb-4">
-                <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 font-medium flex-shrink-0">
-                  <span className="text-sm">
-                    {getInitials(selectedDoctor.name)}
-                  </span>
-                </div>
+                <DoctorAvatar doctor={selectedDoctor} />{" "}
+                {/* FIXED: Use image-based avatar */}
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-semibold text-gray-900 mb-1 truncate">
                     {selectedDoctor.name}
@@ -104,14 +141,16 @@ const Booking = () => {
           </div>
         )}
 
-        {/* Booking Modal */}
-        <BookingModal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          slot={selectedSlot}
-          doctor={selectedDoctor}
-          onConfirm={handleConfirm}
-        />
+        {/* FIXED: Wrap BookingModal in Elements Provider */}
+        <Elements stripe={stripePromise}>
+          <BookingModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            slot={selectedSlot}
+            doctor={selectedDoctor}
+            onConfirm={handleConfirm}
+          />
+        </Elements>
 
         {/* Confirmation Section */}
         {confirmation && (
@@ -144,12 +183,6 @@ const Booking = () => {
                   {confirmation._id}
                 </span>
               </p>
-              <div className="border-2 border-green-200 rounded-lg p-4 bg-white">
-                <QRCode value={confirmation.qrCode} size={128} />
-                <p className="text-xs text-green-600 mt-2">
-                  Scan QR Code for Digital Confirmation
-                </p>
-              </div>
             </div>
           </div>
         )}
