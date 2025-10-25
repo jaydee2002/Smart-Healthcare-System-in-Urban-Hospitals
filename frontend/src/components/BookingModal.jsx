@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
   X,
   Calendar,
@@ -13,14 +14,27 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
+import api from "../services/api.js";
 
 const BookingModal = ({ isOpen, onClose, slot, doctor, onConfirm }) => {
-  const [paymentAmount, setPaymentAmount] = useState(250);
+  const [paymentAmount, setPaymentAmount] = useState(2500); // Initial default
   const [submitting, setSubmitting] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [step, setStep] = useState("confirm"); // confirm, payment, success
 
+  // Sync paymentAmount with doctor prop when it changes
+  useEffect(() => {
+    if (doctor && doctor.consultationRate) {
+      setPaymentAmount(Number(doctor.consultationRate)); // Parse to number if string
+    } else {
+      setPaymentAmount(2500); // Fallback
+    }
+  }, [doctor]); // Re-run when doctor changes
+
   if (!isOpen) return null;
+
+  console.log("BookingModal - doctor:", doctor);
 
   if (!doctor || !slot) {
     return (
@@ -81,9 +95,49 @@ const BookingModal = ({ isOpen, onClose, slot, doctor, onConfirm }) => {
       })
     : "Invalid Time";
 
+  const stripe = useStripe();
+  const elements = useElements();
+
   const handleConfirm = async () => {
+    if (!stripe || !elements) {
+      toast.error("Stripe not loaded");
+      return;
+    }
+
     setSubmitting(true);
     try {
+      let paymentIntentId = null;
+      if (isPrivate) {
+        // Create PaymentIntent on backend
+        console.log(
+          "Sending payment intent request with amount:",
+          paymentAmount * 100
+        ); // Debug
+        const response = await api.post("/appointments/payment/intent", {
+          doctorId: doctor._id,
+          amount: paymentAmount * 100, // Convert to cents for Stripe
+        });
+        const { client_secret } = response.data;
+
+        // Confirm payment on frontend
+        const result = await stripe.confirmCardPayment(client_secret, {
+          payment_method: {
+            card: elements.getElement(CardElement),
+            billing_details: {
+              name: "Patient Name", // From form or auth
+            },
+          },
+        });
+
+        if (result.error) {
+          toast.error(result.error.message);
+          setSubmitting(false);
+          return;
+        }
+        paymentIntentId = result.paymentIntent.id;
+      }
+
+      // Book appointment with payment ID
       const computedDate = isValidDate
         ? appointmentDate.toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0];
@@ -94,20 +148,13 @@ const BookingModal = ({ isOpen, onClose, slot, doctor, onConfirm }) => {
           start: slot.start,
           end: slot.end,
         },
-        ...(isPrivate && { paymentAmount }),
+        paymentIntentId, // Send to backend
       };
 
-      // Simulate booking
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      setBookingData({
-        id: "APT-" + Math.random().toString(36).substr(2, 9).toUpperCase(),
-        qrCode: JSON.stringify(data),
-        ...data,
-      });
-
+      const res = await api.post("/appointments/book", data);
+      setBookingData(res.data);
       setStep("success");
-      if (onConfirm) onConfirm(data);
+      if (onConfirm) onConfirm(res.data);
       setTimeout(() => {
         onClose();
         setStep("confirm");
@@ -115,7 +162,7 @@ const BookingModal = ({ isOpen, onClose, slot, doctor, onConfirm }) => {
       }, 3000);
     } catch (error) {
       console.error("Booking error:", error);
-      alert("Booking failed");
+      toast.error(error.response?.data?.message || "Booking failed");
     }
     setSubmitting(false);
   };
@@ -255,30 +302,32 @@ const BookingModal = ({ isOpen, onClose, slot, doctor, onConfirm }) => {
                   )}
                 </div>
 
-                {/* Payment Section */}
+                {/* Payment Section - Only for Private */}
                 {isPrivate && (
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <CreditCard className="w-5 h-5 text-gray-600" />
-                      <h4 className="text-gray-900">Payment Amount</h4>
+                      <h4 className="text-gray-900">Secure Payment</h4>
                     </div>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                        ₹
-                      </span>
-                      <input
-                        type="number"
-                        value={paymentAmount}
-                        onChange={(e) =>
-                          setPaymentAmount(Number(e.target.value))
-                        }
-                        className="w-full bg-white border border-gray-300 rounded-lg pl-8 pr-4 py-2.5 text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-colors"
-                        min="0"
-                        step="1"
-                      />
-                    </div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Amount: ₹{paymentAmount.toLocaleString()}
+                    </p>
+                    <CardElement
+                      options={{
+                        style: {
+                          base: {
+                            fontSize: "16px",
+                            color: "#424770",
+                            "::placeholder": {
+                              color: "#aab7c4",
+                            },
+                          },
+                        },
+                      }}
+                    />
                     <p className="text-xs text-gray-500 mt-2">
-                      Payment will be processed after confirmation
+                      Secure payment powered by Stripe. Your card details are
+                      encrypted.
                     </p>
                   </div>
                 )}
@@ -305,7 +354,7 @@ const BookingModal = ({ isOpen, onClose, slot, doctor, onConfirm }) => {
               </button>
               <button
                 onClick={handleConfirm}
-                disabled={submitting}
+                disabled={submitting || (isPrivate && (!stripe || !elements))}
                 className="flex-1 px-4 py-2.5 rounded-lg text-white bg-gray-900 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting ? (

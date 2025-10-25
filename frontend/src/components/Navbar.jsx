@@ -15,8 +15,8 @@ const Navbar = () => {
   if (!user) return null;
 
   return (
-    <nav className="bg-blue-600 text-white p-4">
-      <div className="container mx-auto flex justify-between">
+    <nav className="bg-blue-600 text-white p-4 ">
+      <div className="container mx-auto flex justify-between max-w-5xl">
         <Link to="/" className="text-xl font-bold">
           Healthcare System
         </Link>

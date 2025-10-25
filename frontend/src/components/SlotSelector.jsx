@@ -113,154 +113,159 @@ const SlotSelector = ({ doctorId, onSelectSlot }) => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8">
-      {/* Calendar Section */}
-      <div className="bg-white border rounded-lg shadow-sm p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="w-5 h-5 text-neutral-600"
-          >
-            <path d="M8 2v4" />
-            <path d="M16 2v4" />
-            <rect width="18" height="18" x="3" y="4" rx="2" />
-            <path d="M3 10h18" />
-          </svg>
-          <h2>Select a Date</h2>
-        </div>
-        <div className="flex justify-center">
-          <Calendar
-            selected={selectedDate}
-            onSelect={(date) => setSelectedDate(date)}
-            disabled={(date) =>
-              date < new Date(new Date().setHours(0, 0, 0, 0))
-            }
-            className="rounded-md border-0"
-          />
-        </div>
-      </div>
-
-      {/* Time Slots Section */}
-      <div className="bg-white border rounded-lg shadow-sm p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="w-5 h-5 text-neutral-600"
-          >
-            <path d="M12 6v6l4 2" />
-            <circle cx="12" cy="12" r="10" />
-          </svg>
-          <h2>Available Time Slots</h2>
-          <span className="ml-auto text-neutral-500">
-            {selectedDate.toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
-          </span>
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="animate-pulse bg-neutral-200 h-16 w-full rounded-lg"
-              />
-            ))}
+    <div className="w-full mx-auto space-y-8">
+      {/* Layout: Slots Left, Calendar Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white border rounded-lg shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-5 h-5 text-neutral-600"
+            >
+              <path d="M8 2v4" />
+              <path d="M16 2v4" />
+              <rect width="18" height="18" x="3" y="4" rx="2" />
+              <path d="M3 10h18" />
+            </svg>
+            <h2>Select a Date</h2>
           </div>
-        ) : slots.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 flex items-center justify-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-8 h-8 text-neutral-400"
-              >
-                <path d="M12 6v6l4 2" />
-                <circle cx="12" cy="12" r="10" />
-              </svg>
+          <div className="flex justify-center">
+            <Calendar
+              selected={selectedDate}
+              onSelect={(date) => setSelectedDate(date)}
+              disabled={(date) =>
+                date < new Date(new Date().setHours(0, 0, 0, 0))
+              }
+              className="rounded-md border-0"
+            />
+          </div>
+        </div>
+        {/* Time Slots Section - Left */}
+        <div className="bg-white border rounded-lg shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-5 h-5 text-neutral-600"
+            >
+              <path d="M12 6v6l4 2" />
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+            <h2>Available Time Slots</h2>
+            <span className="ml-auto text-neutral-500">
+              {selectedDate.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse bg-neutral-200 h-16 w-full rounded-lg"
+                />
+              ))}
             </div>
-            <p className="text-neutral-500">No available slots for this date</p>
-            <p className="text-neutral-400 mt-1">Please select another date</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {slots.map((slot, i) => (
-              <button
-                key={i}
-                onClick={() => onSelectSlot(slot)}
-                className="group relative p-4 rounded-lg border-2 border-neutral-200 bg-white hover:border-neutral-900 hover:bg-neutral-50 transition-all duration-200 text-left"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-neutral-100 group-hover:bg-neutral-900 flex items-center justify-center transition-colors duration-200">
+          ) : slots.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-8 h-8 text-neutral-400"
+                >
+                  <path d="M12 6v6l4 2" />
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+              </div>
+              <p className="text-neutral-500">
+                No available slots for this date
+              </p>
+              <p className="text-neutral-400 mt-1">
+                Please select another date
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {slots.map((slot, i) => (
+                <button
+                  key={i}
+                  onClick={() => onSelectSlot(slot)}
+                  className="group relative p-4 rounded-lg border-2 border-neutral-200 bg-white hover:border-neutral-900 hover:bg-neutral-50 transition-all duration-200 text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-neutral-100 group-hover:bg-neutral-900 flex items-center justify-center transition-colors duration-200">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-5 h-5 text-neutral-600 group-hover:text-white transition-colors duration-200"
+                        >
+                          <path d="M12 6v6l4 2" />
+                          <circle cx="12" cy="12" r="10" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-neutral-900">
+                          {formatTime(slot.start)}
+                        </div>
+                        <div className="text-neutral-500 mt-0.5">30 min</div>
+                      </div>
+                    </div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
+                        className="w-5 h-5 text-neutral-900"
                         fill="none"
+                        viewBox="0 0 24 24"
                         stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="w-5 h-5 text-neutral-600 group-hover:text-white transition-colors duration-200"
                       >
-                        <path d="M12 6v6l4 2" />
-                        <circle cx="12" cy="12" r="10" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </div>
-                    <div>
-                      <div className="text-neutral-900">
-                        {formatTime(slot.start)}
-                      </div>
-                      <div className="text-neutral-500 mt-0.5">30 min</div>
-                    </div>
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <svg
-                      className="w-5 h-5 text-neutral-900"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

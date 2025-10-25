@@ -25,13 +25,46 @@ const DoctorCard = ({ doctor, onSelect }) => {
       ? "bg-green-100 text-green-800 border border-green-200"
       : "bg-blue-100 text-blue-800 border border-blue-200";
 
+  // Helper to get full image URL (FIX: Prepend backend base URL)
+  const getDoctorImageUrl = (imagePath) => {
+    if (!imagePath) return null; // No fallback URL, use initials
+    return `http://localhost:5001${imagePath}`; // Backend base + path (no /api for static)
+  };
+
+  // Doctor Avatar Component (Image with fallback to initials)
+  const DoctorAvatar = () => {
+    const imageUrl = getDoctorImageUrl(doctor.image);
+    return (
+      <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={`${doctor.name}'s profile`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              e.target.style.display = "none";
+              const fallback = e.target.nextSibling;
+              if (fallback) fallback.style.display = "flex";
+            }}
+          />
+        ) : null}
+        <div
+          className={`w-full h-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium absolute inset-0 ${
+            imageUrl ? "hidden" : ""
+          }`}
+        >
+          <span className="text-sm">{getInitials(doctor.name)}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors duration-200">
       {/* Header: Avatar + Name + Qualification */}
       <div className="flex items-start gap-4 mb-4">
-        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-medium flex-shrink-0">
-          <span className="text-sm">{getInitials(doctor.name)}</span>
-        </div>
+        <DoctorAvatar /> {/* FIXED: Use image-based avatar */}
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-semibold text-gray-900 truncate">
             {doctor.name}
