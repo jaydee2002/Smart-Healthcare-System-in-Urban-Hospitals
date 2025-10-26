@@ -18,6 +18,8 @@ import Booking from "./pages/Patient/Booking.jsx";
 import PatientVisit from "./pages/Doctor/PatientVisit.jsx";
 import PatientDashboard from "./pages/Patient/Dashboard.jsx";
 import DoctorDashboard from "./pages/Doctor/Dashboard.jsx";
+import ReportView from "./pages/ReportView.jsx";
+import ReportList from "./components/ReportList.jsx";
 
 function App() {
   return (
@@ -52,6 +54,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/reports" element={<ReportList />} />
+        <Route path="/view-report/:id" element={<ReportView />} />
         <Route
           path="/patient"
           element={

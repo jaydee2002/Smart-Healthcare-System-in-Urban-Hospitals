@@ -12,7 +12,10 @@ import doctorRoutes from "./routes/doctors.js";
 import appointmentRoutes from "./routes/appointments.js";
 import patientRoutes from "./routes/patients.js";
 import hospitalRoutes from "./routes/hospitals.js";
-import reportRoutes from "./routes/reports.js";
+import reportRoutes from "./routes/repo.js";
+import { generateMockData } from "./services/generateMockData.js";
+import reportScheduleRoutes from "./routes/reportScheduleRoutes.js";
+import Report from "./models/Report.js";
 
 dotenv.config();
 
@@ -34,7 +37,56 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/patients", patientRoutes);
 app.use("/api/hospitals", hospitalRoutes);
-app.use("/api/reports", reportRoutes);
+// app.use("/api/reports", reportRoutes);
+
+app.post("/api/reports/generate", (req, res) => {
+  try {
+    const payload = req.body;
+    const data = generateMockData(payload);
+
+    console.log("Generated mock report data:", data);
+
+    // Store in database
+    const newReport = new Report({
+      reportData: data,
+      payload: payload, // Optional: store the input payload for reference
+    });
+
+    newReport.save();
+    console.log("Report saved to database with ID:", newReport._id);
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/reports/export", async (req, res) => {
+  const { format } = req.query;
+  // Implement export logic (e.g., using pdfkit for PDF, exceljs for XLSX)
+  // For now, mock response
+  if (format === "pdf") {
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=report.pdf",
+    });
+    res.send(Buffer.from("Mock PDF content"));
+  } else if (format === "excel") {
+    res.set({
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": "attachment; filename=report.xlsx",
+    });
+    res.send(Buffer.from("Mock Excel content"));
+  } else {
+    res.status(400).json({ error: "Invalid format" });
+  }
+});
+
+app.use("/api/reports", reportScheduleRoutes);
+
+// Routes
+app.use("/api/oapi/reports", reportRoutes);
 
 const PORT = process.env.PORT || 5002;
 

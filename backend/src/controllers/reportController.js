@@ -1,6 +1,7 @@
 // src/controllers/reportController.js
 import Report from "../models/Report.js";
 import Appointment from "../models/Appointment.js";
+import ReportSchedule from "../models/ReportSchedule.js";
 import Hospital from "../models/Hospital.js";
 import {
   startOfDay,
@@ -9,6 +10,8 @@ import {
   startOfWeek,
   startOfMonth,
 } from "date-fns";
+
+import { sendMail } from "../utils/mailService.js";
 
 // Helper to build date range based on type
 const getDateRange = (type, baseDate = new Date()) => {
@@ -192,4 +195,59 @@ const getReportById = async (req, res) => {
   }
 };
 
-export { generateReport, getReports, getReportById };
+import emailTemplate from "../templates/reportEmail.js";
+
+const scheduleReport = async (req, res, next) => {
+  try {
+    const {
+      reportType,
+      department,
+      serviceType,
+      patientType,
+      status,
+      scheduleDateTime,
+    } = req.body;
+
+    if (!reportType || !scheduleDateTime) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const payload = {
+      reportType,
+      department,
+      serviceType,
+      patientType,
+      status,
+      scheduleDateTime,
+    };
+
+    const saved = await ReportSchedule.create(payload);
+
+    // Format readable date/time
+    const dateStr = new Date(scheduleDateTime).toLocaleString();
+
+    // Send email to manager
+    await sendMail(
+      "jaaydee2002@gmail.com",
+      "Report Scheduled Successfully",
+      emailTemplate(
+        reportType,
+        department,
+        serviceType,
+        patientType,
+        status,
+        dateStr
+      )
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Report scheduled successfully and email sent",
+      data: saved,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export { generateReport, getReports, getReportById, scheduleReport };

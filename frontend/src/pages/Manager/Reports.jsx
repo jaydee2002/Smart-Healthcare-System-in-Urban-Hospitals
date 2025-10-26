@@ -1,10 +1,12 @@
 // src/pages/Manager/Reports.jsx
 import { useState, useEffect } from "react";
-import ReportFilters from "../../components/ReportFilters.jsx";
+import { ReportsAnalytics } from "../../components/ReportFilters.jsx";
 import ReportCharts from "../../components/ReportCharts.jsx";
 import ReportExport from "../../components/ReportExport.jsx";
 import { generateReport, getReports } from "../../services/reportService.js";
 import toast from "react-hot-toast";
+import ManageSchedule from "./manageSchedule.jsx";
+import ReportList from "../../components/ReportList.jsx";
 
 const Reports = () => {
   const [reportData, setReportData] = useState(null);
@@ -34,11 +36,14 @@ const Reports = () => {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Reports & Analytics</h1>
-      <ReportFilters
+      {/* <h1 className="text-3xl font-bold mb-6">Reports & Analytics</h1> */}
+
+      <ReportsAnalytics />
+      <ManageSchedule />
+      {/* <ReportFilters
         onFilterChange={handleFilterChange}
         initialFilters={filters}
-      />
+      /> */}
       {reportData && (
         <>
           <ReportCharts metrics={reportData.metrics} />

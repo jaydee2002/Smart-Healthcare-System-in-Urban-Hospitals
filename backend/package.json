@@ -15,20 +15,25 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "transform": { "^.+\\.jsx?$": "babel-jest" },
-    "roots": ["<rootDir>/tests"],
+    "transform": {
+      "^.+\\.jsx?$": "babel-jest"
+    },
+    "roots": [
+      "<rootDir>/tests"
+    ],
     "resetMocks": true,
     "restoreMocks": true,
     "clearMocks": true,
-
     "collectCoverage": true,
     "collectCoverageFrom": [
-      "src/controllers/**/*.js",     
+      "src/controllers/**/*.js",
       "!src/controllers/**/__mocks__/**",
       "!src/**/index.js"
     ],
-    "coverageReporters": ["text", "lcov"],
-
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ],
     "coverageThreshold": {
       "global": {
         "branches": 60,
@@ -52,6 +57,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.1",
     "multer": "^2.0.2",
+    "nodemailer": "^7.0.10",
     "qrcode": "^1.5.4",
     "stripe": "^19.1.0"
   },
